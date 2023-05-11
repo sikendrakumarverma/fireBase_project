@@ -12,6 +12,7 @@ function AllUsersList() {
     let [data1, setData] = useState([]);
     let navigate = useNavigate();
     let data=[...data1]
+    const rowsPerPageOptions = [5,10, 20, 50]; // Customize the available rows per page options
 
     const columns = [
         {
@@ -22,15 +23,17 @@ function AllUsersList() {
         {
             name: 'Phone',
             selector: row => row.phone,
-
+            sortable: true,
         },
         {
             name: 'Email',
             selector: row => row.email,
+            sortable: true,
         },
         {
             name: 'Address',
             selector: row => row.address,
+            sortable: true,
         },
         {
             name: 'CreatedAt',
@@ -134,6 +137,9 @@ function AllUsersList() {
             <DataTable
             columns={columns}
             data={data} 
+            pagination
+        paginationPerPage={5} // Set the number of rows per page
+        paginationRowsPerPageOptions={rowsPerPageOptions} // Customize the available rows per page options
         />
 
             {/* <div className="col-sm-10 offset-sm-1">
