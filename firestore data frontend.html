@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Firestore Read/Update Example</title>
+</head>
+
+<body>
+  <!-- Firebase JavaScript SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCBuX1L71b86KlgZwHUxKXEOLPKDWKjkl4",
+      authDomain: "barso-7a285.firebaseapp.com",
+      projectId: "barso-7a285",
+      storageBucket: "barso-7a285.appspot.com",
+      messagingSenderId: "96397590283",
+      appId: "1:96397590283:web:9145d4e4551c98430eec0e",
+      measurementId: "G-48VQSTSB0S"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    let name; //prompt('Enter collection name');
+
+    let collName = '/Games/jhandi_mundi/subGames'//prompt('Enter collection name');
+
+    let latestDocId = null; // Variable to store the latest document ID
+
+    // const handleDataUpdate = (querySnapshot) => {
+    //   // ... Your existing code ...
+
+    //   querySnapshot.forEach((doc) => {
+    //     // ... Your existing code ...
+
+    //     // Update the latestDocId variable with the current document ID
+    //     latestDocId = doc.id;
+    //   });
+    // };
+
+    // const setupRealTimeUpdates = () => {
+    //   db.collection(collName).onSnapshot((querySnapshot) => {
+    //     handleDataUpdate(querySnapshot);
+
+    //     // Display the latest document ID in the console
+    //     console.log("Latest Document ID:", latestDocId);
+    //   });
+    // };
+    let num = 0;
+    let second;
+    let timeStamp;
+    let startTime;
+    let isUpdate = false;
+    let totalPlayingUsers;
+    let currentTime;
+
+    const handleDataUpdate = (querySnapshot) => {
+      db.collection(collName)
+        .orderBy('createdAt', 'desc')
+        .limit(1)
+        .get()
+        .then((querySnapshot) => {
+          // Check if there is any document returned
+          if (!querySnapshot.empty) {
+            // Get the latest document ID
+            latestDocId = querySnapshot.docs[0].id;
+            document.getElementById("gameId").innerHTML = 'gameId: ' + latestDocId
+            console.log("Latest Document ID:", latestDocId);
+
+            timestamp = querySnapshot.docs[0].data()?.createdAt
+            let seconds = timestamp.seconds % 60;
+            startTime = new Date().getSeconds();
+            let tmp;
+
+
+            setInterval(() => {
+              document.getElementById("timer").innerHTML = new Date().getSeconds();
+
+            }, 1000)
+            //startTime = querySnapshot.docs[0].data().timer;
+            document.getElementById("inc").innerHTML = '+:' + num
+
+            document.getElementById("timer").innerHTML = startTime
+            document.getElementById("totalUsers").innerHTML = querySnapshot.docs[0].data()?.totalPlayingUsers?.length ?? 0
+            document.getElementById("playingUsers").innerHTML = querySnapshot.docs[0].data()?.totalPlayingUsers ?? ''
+            console.log("querySnapshot => all currentUsers", querySnapshot.docs[0].data()?.totalPlayingUsers)
+
+            //console.log("querySnapshot => time", querySnapshot.docs[0].data()?.createdAt)
+
+            const date = new Date(timestamp.seconds * 1000); // Convert seconds to milliseconds
+
+            // Format the date as a readable string
+            const formattedDate = date.toLocaleDateString(); // Get the date part (e.g., "7/19/2023" for "July 19, 2023")
+            const formattedTime = date.toLocaleTimeString(); // Get the time part (e.g., "8:38:21 PM" for "8:38:21 PM UTC")
+
+            //console.log("second", second)
+
+            // Get the seconds directly from the timestamp
+            //const seconds = timestamp.seconds % 60;
+
+            // console.log("Readable seconds:", seconds);
+
+            // console.log("Readable Date:", formattedDate);
+            // console.log("Readable Time:", formattedTime);
+
+            let diff = startTime - seconds
+            diff = Math.abs(diff);
+            console.log("diff", diff)
+
+            if (diff <= 40) {
+
+              if (!name && isUpdate == false) {
+                name = prompt('Enter name');
+
+                totalPlayingUsers = [
+                  {
+                    name: name
+                  }
+                ];
+                if (name) {
+                  // Update API call
+                  let data = {
+                    totalPlayingUsers: firebase.firestore.FieldValue.arrayUnion(name),
+                  };
+
+                  db.collection(collName)
+                    .doc(latestDocId).set(data, { merge: true })
+                    .then((docRef) => {
+                      //res.status(200).send(docRef.id);
+                      console.log("user added", docRef)
+
+                    })
+                    .catch((error) => {
+                      //res.status(500).send('Error creating document: ' + error);
+                      console.log("Error ", error);
+                    });
+                  //name = ''
+
+                }
+              }
+              isUpdate = true
+
+            }
+
+            //console.log("startTime", startTime);
+
+            if (startTime == 1 || startTime == 2 || startTime == 3 || startTime == 4) {
+              isUpdate = false
+            }
+
+          } else {
+            console.log("No documents found in the collection.");
+          }
+        });
+
+      document.getElementById("data").innerHTML = `<tr>
+        <th>GameId</th>
+        <th>Number</th>
+        <th>Duration</th>
+        <th>Actions</th>
+      </tr>`;
+
+      querySnapshot.forEach((doc) => {
+        //console.log("docs",doc);
+        document.getElementById("data").innerHTML +=
+          `<tr>
+            <td>${doc.id}</td>
+            <td>${doc.data().num}</td>
+            <td>${doc.data().duration}</td>
+            <td>
+              <button onclick="editUser('${doc.id}', '${doc.data().name}', '${doc.data().email}', '${doc.data().Mob}')">Edit</button>
+              <button onclick="deleteUser('${doc.id}')">Delete</button>
+              </td>
+
+          </tr>`;
+
+        // Update the latestDocId variable with the current document ID
+        //latestDocId = doc.id;
+        //console.log('ID:', doc.id, '=>', doc.data());
+      });
+    };
+
+    const setupRealTimeUpdates = () => {
+
+      // Get the latest document in the collection ordered by 'createdAt' field in descending order
+
+
+      db.collection(collName).onSnapshot((querySnapshot) => {
+        handleDataUpdate(querySnapshot);
+
+        // Display the latest document ID in the console
+        //console.log("Latest Document ID:", latestDocId);
+      });
+    };
+
+    setupRealTimeUpdates();
+
+    const editUser = (docId, name, email, phone) => {
+      const updatedName = prompt("Enter updated name", name);
+      const updatedEmail = prompt("Enter updated email", email);
+      const updatedPhone = prompt("Enter updated phone number", phone);
+
+      db.collection(collName).doc(docId).update({
+        name: updatedName,
+        email: updatedEmail,
+        Mob: updatedPhone
+      })
+        .then(() => {
+          console.log("Document successfully updated!");
+        })
+        .catch((error) => {
+          console.error("Error updating document: ", error);
+        });
+    };
+
+    let c = 1;
+    let key = "game" + `${c}`;
+
+    const createSubGame = () => {
+      const updatedName = prompt("Enter name");
+      if (updatedName) {
+        const data = {
+          [key]: totalPlayingUsers,
+          timer: "30"
+        };
+
+        db.collection(collName).add(data)
+          .then(() => {
+            console.log("Document successfully updated!");
+            c = c + 1;
+            key = "game" + c; // Update the key variable for the next document
+          })
+          .catch((error) => {
+            console.error("Error updating document: ", error);
+          });
+      }
+    };
+
+    const increaseNum = () => {
+      console.log("called")
+      num = num + 1;
+      document.getElementById("inc").innerHTML = `+${num}`;
+
+      db.collection(collName)
+        .doc(latestDocId).set({
+          num
+        }, { merge: true })
+        .then((docRef) => {
+
+        })
+        .catch((error) => {
+
+        });
+
+    }
+
+    // setInterval(() => {
+    //   let startTime = parseInt(localStorage.getItem("startTime"));
+    //   if (startTime <= 20) {
+    //     if (!name) {
+    //       name = prompt('Enter name');
+    //       if (name) {
+    //         // Update API call
+    //         name= ''
+
+    //       }
+    //     }
+    //   }
+    //   localStorage.setItem("startTime", 0);
+    // }, 60000);
+
+    let prevTime = 0;
+
+
+    // setInterval(() => {
+    //   prevTime = parseInt(localStorage.getItem("startTime"));
+    //   localStorage.setItem("startTime", prevTime + 1);
+
+    //   document.getElementById("timer").innerHTML = prevTime;
+
+    // }, 1000);
+
+    const deleteUser = (docId) => {
+      if (confirm("Are you sure you want to delete this user?")) {
+        db.collection(collName).doc(docId).delete()
+          .then(() => {
+            console.log("Document successfully deleted!");
+          })
+          .catch((error) => {
+            console.error("Error deleting document: ", error);
+          });
+      }
+    };
+  </script>
+
+  <div>
+    <style>
+      table {
+        border-collapse: collapse;
+        width: 100%;
+      }
+
+      th,
+      td {
+        border: 1px solid #dddddd;
+        text-align: left;
+        padding: 8px;
+      }
+
+      th {
+        background-color: #dddddd;
+      }
+    </style>
+
+    <button id="inc" onclick="increaseNum()"></button>
+    <h3 id="gameId"></h3>
+    <h1>Game Time</h1>
+    <h3 id="timer"></h3>
+    <h1>Total Playing Users</h1>
+    <h4 id="totalUsers"></h4>
+    <h4 id="playingUsers"></h4>
+
+    <table id="data">
+    </table>
+  </div>
+</body>
+
+</html>
