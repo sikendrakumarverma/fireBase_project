@@ -3,7 +3,7 @@ const { admin, db } = require('../config/firebase');
 require('dotenv').config();
 
 let CollectionName = process.env.PATT_SUB_GAME_PATH
-console.log("CollectionName",CollectionName);
+//console.log("CollectionName",CollectionName);
 
 // Helper function to handle errors
 const handleError = (res, error) => {
@@ -21,7 +21,7 @@ const createPattSubGame = async (req, res) => {
 
         const docRef = await db.collection(CollectionName).add(data);
         const doc = await docRef.get();
-        res.status(200).send({status: true,message:'Document successfully updated', Id: docRef.id, data: doc.data()});
+        res.status(200).send({status: true,message:'Document successfully created', Id: docRef.id, data: doc.data()});
     } catch (error) {
         handleError(res, error);
     }
@@ -77,6 +77,10 @@ const updatePattSubGame = async (req, res) => {
     try {
         const docId = req.params.docId;
         const data = req.body;
+        const docCheck = await db.collection(CollectionName).doc(docId).get();
+        if (!docCheck.exists) {
+            return res.status(404).send('Document not found');
+        }
         await db.collection(CollectionName).doc(docId).set(data, { merge: true });
 
         const doc = await db.collection(CollectionName).doc(docId).get();
