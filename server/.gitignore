@@ -1,0 +1,9 @@
+node_modules
+
+serviceAccount.json
+.env
+
+package-lock.json
+public
+
+build
